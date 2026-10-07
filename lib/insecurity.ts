@@ -65,7 +65,15 @@ export const isAuthorized = () => (req: Request, res: Response, next: NextFuncti
   next()
 }
 export const denyAll = () => (_req: Request, res: Response) => res.status(403).json({ error: 'Access denied' })
-export const authorize = (user = {}) => jwt.sign(user, privateKey, { expiresInMinutes: 360, algorithm: 'RS256' } as any)
+export const authorize = (user: Record<string, any> = {}) => {
+  const payload = { ...user }
+  if (payload.data) {
+    payload.data = { ...payload.data }
+    delete payload.data.password
+    delete payload.data.totpSecret
+  }
+  return jwt.sign(payload, privateKey, { expiresInMinutes: 360, algorithm: 'RS256' } as any)
+}
 export const verify = (token: string) => {
   try {
     if (typeof token !== 'string' || token.length > 16384) return false

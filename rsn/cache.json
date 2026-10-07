@@ -53,9 +53,7 @@
 		"removed": []
 	},
 	"changeProductChallenge_3_correct.ts": {
-		"added": [
-			48
-		],
+		"added": [],
 		"removed": []
 	},
 	"changeProductChallenge_4.ts": {
@@ -1285,10 +1283,7 @@
 		]
 	},
 	"restfulXssChallenge_1_correct.ts": {
-		"added": [
-			42,
-			43
-		],
+		"added": [],
 		"removed": []
 	},
 	"restfulXssChallenge_2.ts": {

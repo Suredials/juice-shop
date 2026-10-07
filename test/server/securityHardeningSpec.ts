@@ -50,6 +50,14 @@ describe('security hardening', () => {
     expect(next.calledOnce).to.equal(true)
   })
 
+  it('keeps credentials out of issued session payloads', () => {
+    const data = { id: 42, email: 'customer@example.test', password: 'private-hash', totpSecret: 'private-secret' }
+    const payload = security.decode(security.authorize({ data }))
+    expect(payload.data).to.deep.equal({ id: 42, email: 'customer@example.test' })
+    expect(data.password).to.equal('private-hash')
+    expect(data.totpSecret).to.equal('private-secret')
+  })
+
   it('returns permitted profile fields without credential fields', () => {
     const req = userRequest()
     req.query.fields = 'email,password,totpSecret'
