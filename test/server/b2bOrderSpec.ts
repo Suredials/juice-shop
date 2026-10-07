@@ -21,6 +21,7 @@ describe('b2bOrder', () => {
   beforeEach(() => {
     req = { body: { } }
     res = { json: sinon.spy(), status: sinon.spy() }
+    res.status = sinon.stub().returns(res)
     next = sinon.spy()
     save = () => ({
       then () { }
@@ -51,6 +52,8 @@ describe('b2bOrder', () => {
     b2bOrder()(req, res, next)
 
     expect(challenges.rceChallenge.solved).to.equal(false)
+    expect(res.json.calledOnce).to.equal(true)
+    expect(res.status.called).to.equal(false)
   })
 
   it('deserializing arbitrary JSON should not solve "rceChallenge"', () => {
@@ -66,5 +69,15 @@ describe('b2bOrder', () => {
     b2bOrder()(req, res, next)
 
     expect(challenges.rceChallenge.solved).to.equal(false)
+    expect(res.status).to.have.been.calledWith(400)
   })
+
+  for (const orderLinesData of [null, 42, 'null', 'true', '"text"', ' '.repeat(65537)]) {
+    it(`rejects invalid order data of type ${typeof orderLinesData}`, () => {
+      req.body.orderLinesData = orderLinesData
+      b2bOrder()(req, res, next)
+      expect(res.status).to.have.been.calledWith(400)
+      expect(res.json.firstCall.args[0]).to.have.property('error')
+    })
+  }
 })
