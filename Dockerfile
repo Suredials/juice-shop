@@ -1,6 +1,9 @@
 FROM node:24 AS installer
 COPY . /juice-shop
 WORKDIR /juice-shop
+ENV npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_mintimeout=10000 \
+    npm_config_fetch_retry_maxtimeout=60000
 RUN npm install -g typescript@5.3.3
 RUN npm ci --omit=dev --unsafe-perm
 RUN npm dedupe --omit=dev
