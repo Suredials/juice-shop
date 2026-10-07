@@ -7,8 +7,6 @@ import { describe, it, before } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
 import type { Express } from 'express'
-import { challenges } from '../../data/datacache'
-import * as utils from '../../lib/utils'
 import * as security from '../../lib/insecurity'
 import { createTestApp } from './helpers/setup'
 
@@ -21,39 +19,22 @@ before(async () => {
 }, { timeout: 60000 })
 
 void describe('/b2b/v2/orders', () => {
-  if (utils.isChallengeEnabled(challenges.rceChallenge) || utils.isChallengeEnabled(challenges.rceOccupyChallenge)) {
-    void it('POST endless loop exploit in "orderLinesData" will raise explicit error', async () => {
+  for (const { name, orderLinesData } of [
+    { name: 'an infinite loop', orderLinesData: '(function dos() { while(true); })()' },
+    { name: 'a pathological regular expression', orderLinesData: '/((a+)+)b/.test("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa")' },
+    { name: 'a sandbox breakout', orderLinesData: 'this.constructor.constructor("return process")().exit()' }
+  ]) {
+    void it(`POST does not evaluate ${name} in orderLinesData`, async () => {
+      const start = Date.now()
       const res = await request(app)
         .post('/b2b/v2/orders')
         .set(authHeader)
-        .send({
-          orderLinesData: '(function dos() { while(true); })()'
-        })
+        .send({ orderLinesData })
 
-      assert.equal(res.status, 500)
-      assert.ok(res.text.includes('Infinite loop detected - reached max iterations'))
-    })
-
-    void it('POST busy spinning regex attack does not raise an error', async () => {
-      const res = await request(app)
-        .post('/b2b/v2/orders')
-        .set(authHeader)
-        .send({
-          orderLinesData: '/((a+)+)b/.test("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa")'
-        })
-
-      assert.equal(res.status, 503)
-    })
-
-    void it('POST sandbox breakout attack in "orderLinesData" will raise error', async () => {
-      const res = await request(app)
-        .post('/b2b/v2/orders')
-        .set(authHeader)
-        .send({
-          orderLinesData: 'this.constructor.constructor("return process")().exit()'
-        })
-
-      assert.equal(res.status, 500)
+      assert.ok(Date.now() - start < 1800, 'Order processing should not evaluate orderLinesData')
+      assert.equal(res.status, 200)
+      assert.ok(res.body.orderNo)
+      assert.ok(res.body.paymentDue)
     })
   }
 
