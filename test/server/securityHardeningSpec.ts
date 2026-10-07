@@ -18,6 +18,7 @@ import { changePassword } from '../../routes/changePassword'
 import { verifyImageCaptcha } from '../../routes/imageCaptcha'
 import { ImageCaptchaModel } from '../../models/imageCaptcha'
 import { checkKeys } from '../../routes/checkKeys'
+import { saveLoginIp } from '../../routes/saveLoginIp'
 
 describe('security hardening', () => {
   afterEach(() => sinon.restore())
@@ -42,6 +43,18 @@ describe('security hardening', () => {
     clock.tick(6 * 60 * 60 * 1000 + 1000)
     expect(security.verify(token)).to.equal(false)
     expect(security.decode(token)).to.equal(undefined)
+  })
+
+  it('stores a validated client IP and ignores arbitrary client headers', async () => {
+    const req = userRequest()
+    req.ip = '127.0.0.1'
+    req.headers['true-client-ip'] = '<b>untrusted</b>'
+    const update = sinon.stub().resolves({ lastLoginIp: '127.0.0.1', password: 'private-hash' })
+    sinon.stub(UserModel, 'findByPk').resolves({ update } as any)
+    const res = response()
+    await saveLoginIp()(req, res, sinon.spy())
+    expect(update.calledWith({ lastLoginIp: '127.0.0.1' })).to.equal(true)
+    expect(res.json.firstCall.args[0]).to.deep.equal({ lastLoginIp: '127.0.0.1' })
   })
 
   it('requires an administrator for log access', () => {
