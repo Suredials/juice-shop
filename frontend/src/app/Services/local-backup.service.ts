@@ -5,7 +5,6 @@
 
 import { Injectable, inject } from '@angular/core'
 import { type Backup } from '../Models/backup.model'
-import { CookieService } from 'ngy-cookie'
 
 import { SnackBarHelperService } from './snack-bar-helper.service'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -16,7 +15,6 @@ import { ChallengeService } from './challenge.service'
   providedIn: 'root'
 })
 export class LocalBackupService {
-  private readonly cookieService = inject(CookieService)
   private readonly challengeService = inject(ChallengeService)
   private readonly snackBarHelperService = inject(SnackBarHelperService)
   private readonly snackBar = inject(MatSnackBar)
@@ -27,10 +25,10 @@ export class LocalBackupService {
     const backup: Backup = { version: this.VERSION }
 
     backup.banners = {
-      welcomeBannerStatus: this.cookieService.get('welcomebanner_status') ? this.cookieService.get('welcomebanner_status') : undefined,
-      cookieConsentStatus: this.cookieService.get('cookieconsent_status') ? this.cookieService.get('cookieconsent_status') : undefined
+      welcomeBannerStatus: this.getCookie('welcomebanner_status') || undefined,
+      cookieConsentStatus: this.getCookie('cookieconsent_status') || undefined
     }
-    backup.language = this.cookieService.get('language') ? this.cookieService.get('language') : undefined
+    backup.language = this.getCookie('language') || undefined
 
     try {
       const [continueCode, continueCodeFindIt, continueCodeFixIt] = await firstValueFrom(forkJoin([
@@ -43,9 +41,9 @@ export class LocalBackupService {
       backup.continueCodeFixIt = continueCodeFixIt
     } catch {
       console.log('Failed to retrieve continue code(s) for backup from server. Using cookie values as fallback.')
-      backup.continueCode = this.cookieService.get('continueCode') ? this.cookieService.get('continueCode') : undefined
-      backup.continueCodeFindIt = this.cookieService.get('continueCodeFindIt') ? this.cookieService.get('continueCodeFindIt') : undefined
-      backup.continueCodeFixIt = this.cookieService.get('continueCodeFixIt') ? this.cookieService.get('continueCodeFixIt') : undefined
+      backup.continueCode = this.getCookie('continueCode') || undefined
+      backup.continueCodeFindIt = this.getCookie('continueCodeFindIt') || undefined
+      backup.continueCodeFixIt = this.getCookie('continueCodeFixIt') || undefined
     }
 
     const blob = new Blob([JSON.stringify(backup)], { type: 'text/plain;charset=utf-8' })
@@ -100,9 +98,26 @@ export class LocalBackupService {
     if (cookieValue) {
       const expires = new Date()
       expires.setFullYear(expires.getFullYear() + 1)
-      this.cookieService.put(cookieName, cookieValue, { expires })
+      document.cookie = `${encodeURIComponent(cookieName)}=${encodeURIComponent(cookieValue)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
     } else {
-      this.cookieService.remove(cookieName)
+      document.cookie = `${encodeURIComponent(cookieName)}=; Max-Age=0; path=/; SameSite=Lax`
+    }
+  }
+
+  private getCookie (cookieName: string): string | undefined {
+    const prefix = `${encodeURIComponent(cookieName)}=`
+    const cookie = document.cookie.split(';').map((entry) => entry.trim()).find((entry) => entry.startsWith(prefix))
+
+    if (!cookie) {
+      return undefined
+    }
+
+    const value = cookie.slice(prefix.length)
+
+    try {
+      return decodeURIComponent(value)
+    } catch {
+      return value
     }
   }
 }
