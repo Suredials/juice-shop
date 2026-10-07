@@ -46,6 +46,7 @@ export function resetPassword () {
         const user = await UserModel.findByPk(data.UserId)
         if (user) {
           const updatedUser = await user.update({ password: newPassword })
+          security.authenticatedUsers.revokeUserSessions(updatedUser.id)
           verifySecurityAnswerChallenges(updatedUser, answer)
           res.json({ user: { id: updatedUser.id, email: updatedUser.email } })
         }

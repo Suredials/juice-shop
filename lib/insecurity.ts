@@ -41,6 +41,7 @@ interface IAuthenticatedUsers {
   tokenOf: (user: UserModel) => string | undefined
   from: (req: Request) => ResponseWithUser | undefined
   updateFrom: (req: Request, user: ResponseWithUser) => any
+  revokeUserSessions: (userId: number) => void
 }
 
 export const hash = (data: string) => crypto.createHash('md5').update(data).digest('hex')
@@ -74,9 +75,40 @@ export const authorize = (user: Record<string, any> = {}) => {
   }
   return jwt.sign(payload, privateKey, { expiresInMinutes: 360, algorithm: 'RS256' } as any)
 }
+
+const revokedTokens = new Map<string, number>()
+let verificationCount = 0
+
+function purgeExpiredRevocations () {
+  const now = Date.now()
+  for (const [token, expiresAt] of revokedTokens) {
+    if (expiresAt <= now) revokedTokens.delete(token)
+  }
+}
+
+function tokenExpiration (token: string) {
+  try {
+    const payloadPart = token.split('.')[1]
+    const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString())
+    return typeof payload.exp === 'number' && Number.isFinite(payload.exp)
+      ? payload.exp * 1000
+      : Date.now() + 360 * 60 * 1000
+  } catch {
+    return Date.now() + 360 * 60 * 1000
+  }
+}
+
 export const verify = (token: string) => {
   try {
+    if (++verificationCount % 256 === 0) {
+      purgeExpiredRevocations()
+    }
     if (typeof token !== 'string' || token.length > 16384) return false
+    const revokedUntil = revokedTokens.get(token)
+    if (revokedUntil !== undefined) {
+      if (revokedUntil > Date.now()) return false
+      revokedTokens.delete(token)
+    }
     const parts = token.split('.')
     if (parts.length !== 3) return false
     const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString())
@@ -114,6 +146,7 @@ export const authenticatedUsers: IAuthenticatedUsers = {
   tokenMap: {},
   idMap: {},
   put: function (token: string, user: ResponseWithUser) {
+    if (revokedTokens.has(token)) return
     this.tokenMap[token] = user
     this.idMap[user.data.id] = token
   },
@@ -130,6 +163,15 @@ export const authenticatedUsers: IAuthenticatedUsers = {
   updateFrom: function (req: Request, user: ResponseWithUser) {
     const token = utils.jwtFrom(req)
     this.put(token, user)
+  },
+  revokeUserSessions: function (userId: number) {
+    for (const [token, user] of Object.entries(this.tokenMap)) {
+      if (user.data.id !== userId) continue
+      const expiresAt = tokenExpiration(token)
+      if (expiresAt > Date.now()) revokedTokens.set(token, expiresAt)
+      delete this.tokenMap[token]
+      if (this.idMap[userId] === token) delete this.idMap[userId]
+    }
   }
 }
 

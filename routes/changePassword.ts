@@ -58,6 +58,7 @@ export function changePassword () {
         return
       }
       await user.update({ password: newPasswordInString })
+      security.authenticatedUsers.revokeUserSessions(user.id)
       challengeUtils.solveIf(
         challenges.changePasswordBenderChallenge,
         () => user.id === 3 && !currentPassword && user.password === security.hash('slurmCl4ssic')
