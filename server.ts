@@ -339,11 +339,11 @@ function configureApp (app: ReturnType<typeof express>, seq: typeof sequelize) {
 
   // vuln-code-snippet start resetPasswordMortyChallenge
   /* Rate limiting */
-  app.enable('trust proxy')
+  app.set('trust proxy', 'loopback')
   app.use('/rest/user/reset-password', rateLimit({
     windowMs: 5 * 60 * 1000,
     max: 100,
-    keyGenerator ({ headers, ip }: { headers: any, ip: any }) { return headers['X-Forwarded-For'] ?? ip } // vuln-code-snippet vuln-line resetPasswordMortyChallenge
+    keyGenerator ({ ip }: { ip: any }) { return ip } // vuln-code-snippet vuln-line resetPasswordMortyChallenge
   }))
   // vuln-code-snippet end resetPasswordMortyChallenge
 
@@ -391,6 +391,13 @@ function configureApp (app: ReturnType<typeof express>, seq: typeof sequelize) {
   app.post('/api/SecurityQuestions', security.denyAll())
   app.use('/api/SecurityQuestions/:id', security.denyAll())
   /* SecurityAnswers: Only POST of answer allowed. */
+  app.post('/api/SecurityAnswers', (req: Request, res: Response, next: NextFunction) => {
+    if (typeof req.body.answer !== 'string' || req.body.answer.trim().length < 10) {
+      res.status(400).json({ error: 'Security answers must contain at least 10 characters' })
+      return
+    }
+    next()
+  })
   app.get('/api/SecurityAnswers', security.denyAll())
   app.use('/api/SecurityAnswers/:id', security.denyAll())
   /* REST API */
@@ -398,7 +405,7 @@ function configureApp (app: ReturnType<typeof express>, seq: typeof sequelize) {
   app.use('/rest/basket/:id', security.isAuthorized())
   app.use('/rest/basket/:id/order', security.isAuthorized())
   /* Challenge evaluation before finale takes over */ // vuln-code-snippet hide-start
-  app.post('/api/Feedbacks', verify.forgedFeedbackChallenge())
+  app.post('/api/Feedbacks', rateLimit({ windowMs: 20000, max: 5, validate: false }), verify.forgedFeedbackChallenge())
   /* Captcha verification before finale takes over */
   app.post('/api/Feedbacks', utils.asyncHandler(verifyCaptcha()))
   /* Captcha Bypass challenge verification */
@@ -644,6 +651,7 @@ function configureApp (app: ReturnType<typeof express>, seq: typeof sequelize) {
   app.post('/rest/chat', utils.asyncHandler(chat()))
 
   /* Web3 API endpoints */
+  app.use('/rest/web3', security.isAuthorized())
   app.post('/rest/web3/submitKey', utils.asyncHandler(checkKeys()))
   app.get('/rest/web3/nftUnlocked', nftUnlocked())
   app.get('/rest/web3/nftMintListen', utils.asyncHandler(nftMintListener()))

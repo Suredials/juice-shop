@@ -14,6 +14,10 @@ import { getUserProfile } from '../../routes/userProfile'
 import { retrieveLoggedInUser } from '../../routes/currentUser'
 import { UserModel } from '../../models/user'
 import { handleZipFileUpload } from '../../routes/fileUpload'
+import { changePassword } from '../../routes/changePassword'
+import { verifyImageCaptcha } from '../../routes/imageCaptcha'
+import { ImageCaptchaModel } from '../../models/imageCaptcha'
+import { checkKeys } from '../../routes/checkKeys'
 
 describe('security hardening', () => {
   afterEach(() => sinon.restore())
@@ -26,7 +30,7 @@ describe('security hardening', () => {
   }
 
   function response () {
-    const res = { status: sinon.stub(), json: sinon.spy(), redirect: sinon.spy(), set: sinon.spy(), send: sinon.spy(), end: sinon.spy() }
+    const res = { status: sinon.stub(), json: sinon.spy(), redirect: sinon.spy(), set: sinon.spy(), send: sinon.spy(), end: sinon.spy(), __: (value: string) => value }
     res.status.returns(res)
     return res as any
   }
@@ -87,6 +91,85 @@ describe('security hardening', () => {
     await profileImageUrlUpload()(req, res, sinon.spy())
     expect(res.status.calledWith(400)).to.equal(true)
     expect(lookup.called).to.equal(false)
+  })
+
+  for (const imageUrl of ['http://127.0.0.1/avatar.png', 'http://169.254.169.254/avatar.png', 'http://[::1]/avatar.png', 'http://localhost/avatar.png']) {
+    it(`rejects a private image target: ${imageUrl}`, async () => {
+      const req = userRequest()
+      req.body.imageUrl = imageUrl
+      const res = response()
+      const lookup = sinon.stub(UserModel, 'findByPk')
+      await profileImageUrlUpload()(req, res, sinon.spy())
+      expect(res.status.calledWith(400)).to.equal(true)
+      expect(lookup.called).to.equal(false)
+    })
+  }
+
+  it('requires the current password before updating an account', async () => {
+    const req = userRequest()
+    req.query = { new: 'New-password-123', repeat: 'New-password-123' }
+    const res = response()
+    const lookup = sinon.stub(UserModel, 'findByPk')
+    await changePassword()(req, res, sinon.spy())
+    expect(res.status.calledWith(401)).to.equal(true)
+    expect(lookup.called).to.equal(false)
+  })
+
+  it('checks the stored current password and accepts a valid change', async () => {
+    const req = userRequest()
+    const update = sinon.stub().resolves()
+    sinon.stub(UserModel, 'findByPk').resolves({ id: 42, email: 'customer@example.test', password: security.hash('Old-password-123'), update } as any)
+    req.query = { current: 'Wrong-password', new: 'New-password-123', repeat: 'New-password-123' }
+    const res = response()
+    await changePassword()(req, res, sinon.spy())
+    expect(res.status.calledWith(401)).to.equal(true)
+    expect(update.called).to.equal(false)
+    req.query.current = 'Old-password-123'
+    await changePassword()(req, response(), sinon.spy())
+    expect(update.calledWith({ password: 'New-password-123' })).to.equal(true)
+  })
+
+  it('requires an issued image CAPTCHA for data export', async () => {
+    const req = userRequest()
+    req.body.answer = 'abcde'
+    sinon.stub(ImageCaptchaModel, 'findAll').resolves([])
+    const next = sinon.spy()
+    const res = response()
+    await verifyImageCaptcha()(req, res, next)
+    expect(res.status.calledWith(401)).to.equal(true)
+    expect(next.called).to.equal(false)
+  })
+
+  it('consumes a valid image CAPTCHA once', async () => {
+    const req = userRequest()
+    req.body.answer = 'abcde'
+    sinon.stub(ImageCaptchaModel, 'findAll').onFirstCall().resolves([{ id: 7, answer: 'abcde' }] as any).onSecondCall().resolves([])
+    const destroy = sinon.stub(ImageCaptchaModel, 'destroy').resolves(1)
+    const next = sinon.spy()
+    await verifyImageCaptcha()(req, response(), next)
+    expect(destroy.calledWith({ where: { id: 7, UserId: 42, answer: 'abcde' } })).to.equal(true)
+    const res = response()
+    await verifyImageCaptcha()(req, res, next)
+    expect(next.calledOnce).to.equal(true)
+    expect(res.status.calledWith(401)).to.equal(true)
+  })
+
+  it('uses a configured NFT wallet instead of a published mnemonic', async () => {
+    const { HDNodeWallet } = await import('ethers')
+    const wallet = HDNodeWallet.createRandom()
+    const previousMnemonic = process.env.NFT_WALLET_MNEMONIC
+    try {
+      process.env.NFT_WALLET_MNEMONIC = wallet.mnemonic!.phrase
+      const req = userRequest()
+      req.body.privateKey = wallet.privateKey
+      const res = response()
+      await checkKeys()(req, res)
+      expect(res.status.calledWith(200)).to.equal(true)
+      expect(res.json.firstCall.args[0].success).to.equal(true)
+    } finally {
+      if (previousMnemonic === undefined) delete process.env.NFT_WALLET_MNEMONIC
+      else process.env.NFT_WALLET_MNEMONIC = previousMnemonic
+    }
   })
 
   it('renders user names as escaped data', async () => {

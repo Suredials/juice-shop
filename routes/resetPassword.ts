@@ -19,6 +19,10 @@ export function resetPassword () {
     const answer = body.answer
     const newPassword = body.new
     const repeatPassword = body.repeat
+    if (typeof email !== 'string' || typeof answer !== 'string' || answer.trim().length < 10 || typeof newPassword !== 'string' || typeof repeatPassword !== 'string') {
+      res.status(401).send('Invalid password reset details')
+      return
+    }
     if (!email || !answer) {
       next(new Error('Blocked illegal activity by ' + connection.remoteAddress))
       return
@@ -43,7 +47,7 @@ export function resetPassword () {
         if (user) {
           const updatedUser = await user.update({ password: newPassword })
           verifySecurityAnswerChallenges(updatedUser, answer)
-          res.json({ user: updatedUser })
+          res.json({ user: { id: updatedUser.id, email: updatedUser.email } })
         }
       } else {
         res.status(401).send(res.__('Wrong answer to security question.'))

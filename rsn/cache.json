@@ -19,7 +19,10 @@
 	},
 	"adminSectionChallenge_1_correct.ts": {
 		"added": [
-			7
+			7,
+			160,
+			165,
+			187
 		],
 		"removed": [
 			7,
@@ -28,37 +31,78 @@
 		]
 	},
 	"adminSectionChallenge_2.ts": {
-		"added": [],
+		"added": [
+			160,
+			165,
+			187
+		],
 		"removed": []
 	},
 	"adminSectionChallenge_3.ts": {
-		"added": [],
+		"added": [
+			160,
+			165,
+			187
+		],
 		"removed": []
 	},
 	"adminSectionChallenge_4.ts": {
-		"added": [],
+		"added": [
+			160,
+			165,
+			187
+		],
 		"removed": []
 	},
 	"changeProductChallenge_1.ts": {
 		"added": [
-			48
+			42,
+			43,
+			44,
+			45,
+			46,
+			47,
+			48,
+			55
 		],
 		"removed": []
 	},
 	"changeProductChallenge_2.ts": {
 		"added": [
 			18,
-			48
+			42,
+			43,
+			44,
+			45,
+			46,
+			47,
+			48,
+			55
 		],
 		"removed": []
 	},
 	"changeProductChallenge_3_correct.ts": {
-		"added": [],
+		"added": [
+			42,
+			43,
+			44,
+			45,
+			46,
+			47,
+			48
+		],
 		"removed": []
 	},
 	"changeProductChallenge_4.ts": {
 		"added": [
-			48
+			42,
+			43,
+			44,
+			45,
+			46,
+			47,
+			48,
+			55
 		],
 		"removed": []
 	},
@@ -889,52 +933,55 @@
 	},
 	"redirectChallenge_1.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
-			13,
-			14,
-			15,
-			15
+			10,
+			11,
+			12,
+			12
 		]
 	},
 	"redirectChallenge_2.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
-			13,
-			14,
-			15,
-			15
+			10,
+			11,
+			12,
+			12
 		]
 	},
 	"redirectChallenge_3.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
+			10,
+			11,
+			12,
+			12,
 			13,
 			14,
-			15,
 			15,
 			16,
 			17,
@@ -945,10 +992,7 @@
 			22,
 			23,
 			24,
-			25,
-			26,
-			27,
-			28
+			25
 		]
 	},
 	"redirectChallenge_4_correct.ts": {
@@ -957,36 +1001,40 @@
 	},
 	"redirectCryptoCurrencyChallenge_1.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
-			13,
-			14,
-			15,
-			15
+			3,
+			4,
+			10,
+			11,
+			12,
+			12
 		]
 	},
 	"redirectCryptoCurrencyChallenge_2.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
-			13,
-			14,
-			15,
-			15
+			3,
+			4,
+			10,
+			11,
+			12,
+			12
 		]
 	},
 	"redirectCryptoCurrencyChallenge_3_correct.ts": {
@@ -995,19 +1043,21 @@
 	},
 	"redirectCryptoCurrencyChallenge_4.ts": {
 		"added": [
+			10,
+			11,
+			12,
 			13,
 			14,
 			15,
-			16,
-			17,
-			18,
-			19
+			16
 		],
 		"removed": [
-			13,
-			14,
-			15,
-			15
+			3,
+			4,
+			10,
+			11,
+			12,
+			12
 		]
 	},
 	"registerAdminChallenge_1.ts": {
@@ -1299,22 +1349,34 @@
 		"removed": []
 	},
 	"scoreBoardChallenge_1_correct.ts": {
-		"added": [],
+		"added": [
+			160,
+			165,
+			187
+		],
 		"removed": []
 	},
 	"scoreBoardChallenge_2.ts": {
-		"added": [],
+		"added": [
+			160,
+			165,
+			187
+		],
 		"removed": []
 	},
 	"scoreBoardChallenge_3.ts": {
 		"added": [
-			113
+			113,
+			160,
+			165,
+			187
 		],
 		"removed": []
 	},
 	"tokenSaleChallenge_1.ts": {
 		"added": [
-			24
+			8,
+			25
 		],
 		"removed": [
 			24
@@ -1322,25 +1384,17 @@
 	},
 	"tokenSaleChallenge_2.ts": {
 		"added": [
-			24
+			8,
+			25
 		],
 		"removed": [
+			8,
 			24
 		]
 	},
 	"tokenSaleChallenge_3_correct.ts": {
-		"added": [
-			10,
-			24,
-			36,
-			37,
-			44,
-			51,
-			59
-		],
-		"removed": [
-			21
-		]
+		"added": [],
+		"removed": []
 	},
 	"unionSqlInjectionChallenge_1.ts": {
 		"added": [],
@@ -1392,18 +1446,23 @@
 		"removed": []
 	},
 	"web3SandboxChallenge_1_correct.ts": {
-		"added": [
-			166
-		],
+		"added": [],
 		"removed": []
 	},
 	"web3SandboxChallenge_2.ts": {
-		"added": [],
+		"added": [
+			187
+		],
 		"removed": []
 	},
 	"web3SandboxChallenge_3.ts": {
-		"added": [],
-		"removed": []
+		"added": [
+			165,
+			187
+		],
+		"removed": [
+			165
+		]
 	},
 	"web3WalletChallenge_1.sol": {
 		"added": [],
