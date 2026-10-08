@@ -75,6 +75,29 @@ describe('security hardening', () => {
     expect(data.totpSecret).to.equal('private-secret')
   })
 
+  it('preserves safe claims when serializing model-backed session data', () => {
+    const data = {
+      get: () => ({
+        id: 42,
+        email: 'customer@example.test',
+        password: 'private-hash',
+        role: 'customer',
+        totpSecret: 'private-secret'
+      })
+    }
+    const token = security.authorize({ status: 'success', data })
+    const payload = security.decode(token) as { data: Record<string, unknown> }
+    const next = sinon.spy()
+    const res = response()
+
+    expect(payload.data.id).to.equal(42)
+    expect(payload.data.email).to.equal('customer@example.test')
+    expect(payload.data.password).to.equal(undefined)
+    expect(payload.data.totpSecret).to.equal(undefined)
+    security.isAuthorized()({ headers: { authorization: `Bearer ${token}` } } as any, res, next)
+    expect(next.calledOnce).to.equal(true)
+  })
+
   it('returns permitted profile fields without credential fields', () => {
     const req = userRequest()
     req.query.fields = 'email,password,totpSecret'

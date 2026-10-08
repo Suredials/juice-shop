@@ -11,7 +11,7 @@ import * as security from '../../lib/insecurity'
 import { createTestApp } from './helpers/setup'
 
 let app: Express
-const authHeader = { Authorization: 'Bearer ' + security.authorize(), 'content-type': 'application/json' }
+const authHeader = { Authorization: 'Bearer ' + security.authorize({ data: { id: 1 } }), 'content-type': 'application/json' }
 
 before(async () => {
   const result = await createTestApp()
@@ -72,5 +72,27 @@ void describe('/b2b/v2/orders', () => {
 
     assert.equal(res.status, 200)
     assert.equal(res.body.cid, 'test')
+  })
+
+  void it('POST accepts an order with a token issued by the login endpoint', async () => {
+    const email = `b2b-${Date.now()}@local.test`
+    const password = 'CtfTester!23'
+    await request(app)
+      .post('/api/Users')
+      .send({ email, password, passwordRepeat: password, securityQuestion: null, securityAnswer: 'x' })
+
+    const login = await request(app)
+      .post('/rest/user/login')
+      .send({ email, password })
+    assert.equal(login.status, 200)
+
+    const res = await request(app)
+      .post('/b2b/v2/orders')
+      .set('Authorization', `Bearer ${login.body.authentication.token}`)
+      .send({ orderLinesData: 'while(true){}', cid: 'login-token-test' })
+
+    assert.equal(res.status, 200)
+    assert.ok(res.body.orderNo)
+    assert.ok(res.body.paymentDue)
   })
 })

@@ -69,7 +69,18 @@ export const denyAll = () => (_req: Request, res: Response) => res.status(403).j
 export const authorize = (user: Record<string, any> = {}) => {
   const payload = { ...user }
   if (payload.data) {
-    payload.data = { ...payload.data }
+    const userData = payload.data as {
+      get?: (options: { plain: boolean }) => unknown
+      toJSON?: () => unknown
+    }
+    const serializedData = typeof userData.get === 'function'
+      ? userData.get({ plain: true })
+      : typeof userData.toJSON === 'function'
+        ? userData.toJSON()
+        : payload.data
+    payload.data = serializedData !== null && typeof serializedData === 'object' && !Array.isArray(serializedData)
+      ? { ...serializedData }
+      : {}
     delete payload.data.password
     delete payload.data.totpSecret
   }
